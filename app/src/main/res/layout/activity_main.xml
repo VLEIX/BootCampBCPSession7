@@ -25,4 +25,12 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent" />
 
+    <ImageView
+        android:id="@+id/luminosity_image"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_margin="24dp"
+        android:src="@drawable/ic_moon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -7,10 +7,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -18,12 +15,18 @@ import com.frantun.bootcampbcpsession7.databinding.ActivityMainBinding
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+typealias LuminosityListener = (luminosity: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
+    private var imageAnalyzer: ImageAnalysis? = null
 
     private lateinit var outputDirectory: File
+    private lateinit var cameraExecutor: ExecutorService
 
     lateinit var binding: ActivityMainBinding
 
@@ -44,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         outputDirectory = getOutputDirectory()
+        cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
     private fun getOutputDirectory(): File {
@@ -76,6 +80,22 @@ class MainActivity : AppCompatActivity() {
             imageCapture = ImageCapture.Builder()
                 .build()
 
+            // Image Analyzer
+            imageAnalyzer = ImageAnalysis.Builder()
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luminosity ->
+                        runOnUiThread {
+                            binding.luminosityImage.setImageDrawable(ContextCompat.getDrawable(this@MainActivity, if (luminosity > 100) {
+                                R.drawable.ic_sun
+                            } else {
+                                R.drawable.ic_moon
+                            }))
+                        }
+                        Log.d("MainActivity", "luminosity: $luminosity")
+                    })
+                }
+
             // selector
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
@@ -83,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                 // unbind rebinding
                 cameraProvider.unbindAll()
 
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, imageAnalyzer)
             } catch (e: Exception) {
                 Log.d("MainActivity", "Binding CameraX failed", e)
             }
